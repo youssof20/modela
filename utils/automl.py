@@ -1,5 +1,5 @@
 """
-PyCaret AutoML wrapper functions for model training and evaluation.
+AutoML engine using scikit-learn and other ML libraries.
 Handles data preprocessing, model training, and evaluation.
 """
 
@@ -8,8 +8,13 @@ import numpy as np
 import pickle
 import io
 from typing import Dict, Any, Tuple, Optional
-from pycaret.classification import setup as clf_setup, compare_models as clf_compare, pull, create_model
-from pycaret.regression import setup as reg_setup, compare_models as reg_compare
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, r2_score, mean_squared_error
+import xgboost as xgb
+import lightgbm as lgb
 import streamlit as st
 
 
@@ -62,86 +67,109 @@ def detect_problem_type(df: pd.DataFrame, target_col: str) -> str:
 
 def train_model(df: pd.DataFrame, target_col: str, problem_type: str, test_split: float = 0.2) -> Dict[str, Any]:
     """
-    Train AutoML model using PyCaret.
+    Train AutoML model using scikit-learn and other ML libraries.
     Returns dictionary with model, metrics, and feature importance.
     """
     try:
-        # Set up PyCaret environment
+        # Prepare data
+        X = df.drop(columns=[target_col])
+        y = df[target_col]
+        
+        # Handle categorical variables
+        categorical_cols = X.select_dtypes(include=['object']).columns
+        label_encoders = {}
+        
+        for col in categorical_cols:
+            le = LabelEncoder()
+            X[col] = le.fit_transform(X[col].astype(str))
+            label_encoders[col] = le
+        
+        # Split data
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_split, random_state=42)
+        
+        # Scale features
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
+        
+        # Define models to try
         if problem_type == 'classification':
-            setup = clf_setup(
-                data=df,
-                target=target_col,
-                test_data=None,
-                preprocess=True,
-                session_id=42,
-                train_size=1-test_split,
-                fold=3,  # Fast validation
-                silent=True,
-                verbose=False
-            )
-            
-            # Compare models (limit to 5 for speed)
-            best_model = clf_compare(
-                include=['lr', 'rf', 'xgboost', 'lightgbm', 'catboost'],
-                n_select=1,
-                sort='Accuracy',
-                verbose=False
-            )
-            
-        else:  # regression
-            setup = reg_setup(
-                data=df,
-                target=target_col,
-                test_data=None,
-                preprocess=True,
-                session_id=42,
-                train_size=1-test_split,
-                fold=3,  # Fast validation
-                silent=True,
-                verbose=False
-            )
-            
-            # Compare models (limit to 5 for speed)
-            best_model = reg_compare(
-                include=['lr', 'rf', 'xgboost', 'lightgbm', 'catboost'],
-                n_select=1,
-                sort='RMSE',
-                verbose=False
-            )
+            models = {
+                'Logistic Regression': LogisticRegression(random_state=42, max_iter=1000),
+                'Random Forest': RandomForestClassifier(random_state=42, n_estimators=100),
+                'XGBoost': xgb.XGBClassifier(random_state=42, eval_metric='logloss'),
+                'LightGBM': lgb.LGBMClassifier(random_state=42, verbose=-1)
+            }
+        else:
+            models = {
+                'Linear Regression': LinearRegression(),
+                'Random Forest': RandomForestRegressor(random_state=42, n_estimators=100),
+                'XGBoost': xgb.XGBRegressor(random_state=42),
+                'LightGBM': lgb.LGBMRegressor(random_state=42, verbose=-1)
+            }
         
-        # Get model results
-        results = pull()
+        # Train and evaluate models
+        best_model = None
+        best_score = -np.inf
+        best_model_name = ""
+        model_scores = {}
         
-        # Get feature importance
-        feature_importance = get_feature_importance(best_model[0])
+        for name, model in models.items():
+            try:
+                # Train model
+                model.fit(X_train_scaled, y_train)
+                
+                # Evaluate model
+                if problem_type == 'classification':
+                    y_pred = model.predict(X_test_scaled)
+                    score = accuracy_score(y_test, y_pred)
+                else:
+                    y_pred = model.predict(X_test_scaled)
+                    score = r2_score(y_test, y_pred)
+                
+                model_scores[name] = score
+                
+                if score > best_score:
+                    best_score = score
+                    best_model = model
+                    best_model_name = name
+                    
+            except Exception as e:
+                st.warning(f"Failed to train {name}: {str(e)}")
+                continue
         
-        # Get model name
-        model_name = str(best_model[0]).split('(')[0]
+        if best_model is None:
+            st.error("No models could be trained successfully.")
+            return None
         
-        # Prepare metrics
-        metrics = {}
+        # Calculate detailed metrics
+        y_pred = best_model.predict(X_test_scaled)
+        
         if problem_type == 'classification':
             metrics = {
-                'accuracy': results.loc[0, 'Accuracy'],
-                'precision': results.loc[0, 'Precision'],
-                'recall': results.loc[0, 'Recall'],
-                'f1': results.loc[0, 'F1'],
-                'auc': results.loc[0, 'AUC']
+                'accuracy': accuracy_score(y_test, y_pred),
+                'precision': precision_score(y_test, y_pred, average='weighted'),
+                'recall': recall_score(y_test, y_pred, average='weighted'),
+                'f1': f1_score(y_test, y_pred, average='weighted')
             }
         else:
             metrics = {
-                'rmse': results.loc[0, 'RMSE'],
-                'mae': results.loc[0, 'MAE'],
-                'r2': results.loc[0, 'R2'],
-                'mape': results.loc[0, 'MAPE']
+                'r2': r2_score(y_test, y_pred),
+                'rmse': np.sqrt(mean_squared_error(y_test, y_pred)),
+                'mae': np.mean(np.abs(y_test - y_pred))
             }
         
+        # Get feature importance
+        feature_importance = get_feature_importance(best_model, X.columns)
+        
         return {
-            'model': best_model[0],
-            'model_name': model_name,
+            'model': best_model,
+            'model_name': best_model_name,
             'metrics': metrics,
             'feature_importance': feature_importance,
-            'results_df': results
+            'scaler': scaler,
+            'label_encoders': label_encoders,
+            'model_scores': model_scores
         }
         
     except Exception as e:
@@ -149,17 +177,22 @@ def train_model(df: pd.DataFrame, target_col: str, problem_type: str, test_split
         return None
 
 
-def get_feature_importance(model) -> Dict[str, float]:
+def get_feature_importance(model, feature_names) -> Dict[str, float]:
     """
     Extract feature importance from trained model.
     Returns dictionary of feature names and importance scores.
     """
     try:
-        # Get feature importance from PyCaret
-        importance_df = model.feature_importance()
-        
-        # Convert to dictionary and sort by importance
-        importance_dict = dict(zip(importance_df['Feature'], importance_df['Importance']))
+        if hasattr(model, 'feature_importances_'):
+            importance_dict = dict(zip(feature_names, model.feature_importances_))
+        elif hasattr(model, 'coef_'):
+            # For linear models, use absolute coefficients
+            coef = np.abs(model.coef_)
+            if coef.ndim > 1:
+                coef = coef[0]  # Take first class for multi-class
+            importance_dict = dict(zip(feature_names, coef))
+        else:
+            return {}
         
         # Return top 10 features
         sorted_features = sorted(importance_dict.items(), key=lambda x: x[1], reverse=True)
@@ -170,14 +203,25 @@ def get_feature_importance(model) -> Dict[str, float]:
         return {}
 
 
-def generate_predictions_sample(model, test_data: pd.DataFrame, target_col: str) -> pd.DataFrame:
+def generate_predictions_sample(model, scaler, label_encoders, test_data: pd.DataFrame, target_col: str) -> pd.DataFrame:
     """
     Generate sample predictions for visualization.
     Returns dataframe with actual vs predicted values.
     """
     try:
+        # Prepare test data
+        X_test = test_data.drop(columns=[target_col])
+        
+        # Apply label encoding
+        for col, le in label_encoders.items():
+            if col in X_test.columns:
+                X_test[col] = le.transform(X_test[col].astype(str))
+        
+        # Scale features
+        X_test_scaled = scaler.transform(X_test)
+        
         # Generate predictions
-        predictions = model.predict(test_data.drop(columns=[target_col]))
+        predictions = model.predict(X_test_scaled)
         
         # Create comparison dataframe
         comparison_df = pd.DataFrame({
@@ -208,33 +252,3 @@ def deserialize_model(model_bytes: bytes):
     """
     buffer = io.BytesIO(model_bytes)
     return pickle.load(buffer)
-
-
-def get_model_explanations(model, df: pd.DataFrame, target_col: str) -> Dict[str, Any]:
-    """
-    Get model explanations and insights.
-    Returns dictionary with various model insights.
-    """
-    try:
-        explanations = {}
-        
-        # Get feature importance
-        explanations['feature_importance'] = get_feature_importance(model)
-        
-        # Get model performance summary
-        results = pull()
-        explanations['performance_summary'] = results.iloc[0].to_dict()
-        
-        # Get data summary
-        explanations['data_summary'] = {
-            'total_samples': len(df),
-            'total_features': len(df.columns) - 1,
-            'target_column': target_col,
-            'missing_values': df.isnull().sum().sum()
-        }
-        
-        return explanations
-        
-    except Exception as e:
-        st.warning(f"Could not generate model explanations: {str(e)}")
-        return {}

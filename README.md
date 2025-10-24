@@ -18,7 +18,7 @@ Modela is a powerful, open-source AutoML platform that democratizes machine lear
 - **🔐 User Management**: Simple local authentication with guest mode support
 - **💾 Local Storage**: Local file storage for datasets and models (completely free)
 - **📱 Responsive Design**: Modern, mobile-friendly interface
-- **🚀 One-Click Deployment**: Deploy to Streamlit Cloud in minutes
+- **🚀 Easy Setup**: Simple installation with Python 3.8+
 - **📚 Open Source**: Fully open source with MIT license
 - **🎯 Production Ready**: Battle-tested for real-world use cases
 
@@ -86,11 +86,10 @@ docker-compose up
 # Access at http://localhost:8501
 ```
 
-**Cloud Deployment (Advanced Users)**
-- **Streamlit Cloud**: Free tier available (may have dependency issues)
-- **Heroku**: Requires paid dyno for PyCaret
-- **Railway**: Good alternative for cloud deployment
-- **Google Colab**: Can run in browser (limited functionality)
+**Cloud Deployment (Not Recommended)**
+- **Note**: PyCaret has compatibility issues with newer Python versions
+- **Alternative**: Use Docker for consistent deployment
+- **Local First**: Designed to run on your machine for privacy and performance
 
 ## 📁 Project Structure
 
