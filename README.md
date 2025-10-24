@@ -24,7 +24,9 @@ Modela is a powerful, open-source AutoML platform that democratizes machine lear
 
 ## 🚀 Quick Start
 
-### Local Development
+**Modela is designed to run locally on your machine.** This gives you full control over your data and models while keeping everything private and secure.
+
+### Local Installation (Recommended)
 
 1. **Clone the repository**
    ```bash
@@ -32,71 +34,63 @@ Modela is a powerful, open-source AutoML platform that democratizes machine lear
    cd modela
    ```
 
-2. **Install dependencies**
+2. **Check compatibility (recommended)**
+   ```bash
+   python check_installation.py
+   ```
+
+3. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Create demo datasets (optional)**
+4. **Create demo datasets (optional)**
    ```bash
    python create_demo_data.py
    ```
 
-4. **Test the installation**
+5. **Test the installation**
    ```bash
    python test_modela.py
    ```
 
-5. **Run the application**
+6. **Run the application**
    ```bash
    streamlit run app.py
    ```
 
-6. **Open your browser**
+7. **Open your browser**
    Navigate to `http://localhost:8501`
 
-### Streamlit Cloud Deployment
+### Why Run Locally?
 
-1. **Push to GitHub**
-   ```bash
-   git add .
-   git commit -m "Initial commit"
-   git push origin main
-   ```
+- **🔒 Privacy**: Your data never leaves your machine
+- **⚡ Speed**: No network latency, faster training
+- **💰 Cost**: Completely free, no cloud costs
+- **🛠️ Control**: Full control over your environment
+- **📊 Offline**: Works without internet connection
 
-2. **Deploy on Streamlit Cloud**
-   - Go to [Streamlit Cloud](https://share.streamlit.io/)
-   - Connect your GitHub account
-   - Select the `youssof20/modela` repository
-   - Click "Deploy" (no additional configuration needed!)
+### System Requirements
 
-3. **Your app is ready**
-   - Wait for deployment to complete
-   - Your app will be available at `https://modela.streamlit.app`
+- **Python**: 3.8, 3.9, or 3.10 (3.11+ may have compatibility issues)
+- **RAM**: Minimum 4GB, recommended 8GB+
+- **Storage**: 2GB free space
+- **OS**: Windows, macOS, or Linux
 
 ### Alternative Deployment Options
 
-**Docker (Recommended for Production)**
+**Docker (For Production/Sharing)**
 ```bash
-# Build the Docker image
-docker build -t modela .
-
-# Run the container
-docker run -p 8501:8501 modela
+# Build and run with Docker
+docker-compose up
+# Access at http://localhost:8501
 ```
 
-**Heroku**
-```bash
-# Install Heroku CLI and login
-heroku create your-modela-app
-git push heroku main
-```
-
-**Railway**
-```bash
-# Connect your GitHub repo to Railway
-# Railway will automatically detect and deploy
-```
+**Cloud Deployment (Advanced Users)**
+- **Streamlit Cloud**: Free tier available (may have dependency issues)
+- **Heroku**: Requires paid dyno for PyCaret
+- **Railway**: Good alternative for cloud deployment
+- **Google Colab**: Can run in browser (limited functionality)
 
 ## 📁 Project Structure
 
@@ -262,20 +256,35 @@ python test_modela.py
 
 ### Common Issues
 
-1. **Storage Error**
+1. **PyCaret Installation Issues**
+   - **Problem**: PyCaret fails to install on Python 3.11+
+   - **Solution**: Use Python 3.8, 3.9, or 3.10
+   - **Alternative**: Use Docker which has compatible Python version
+
+2. **Dependency Conflicts**
+   - **Problem**: Package version conflicts during installation
+   - **Solution**: Create a virtual environment: `python -m venv modela_env`
+   - **Activate**: `source modela_env/bin/activate` (Linux/Mac) or `modela_env\Scripts\activate` (Windows)
+
+3. **Storage Error**
    - Ensure you have write permissions in the project directory
    - Check available disk space
    - Verify the `data/` directory can be created
 
-2. **Model Training Fails**
+4. **Model Training Fails**
    - Check dataset size (max 50MB)
    - Ensure target column has sufficient data
    - Try with a smaller dataset first
 
-3. **Upload Issues**
+5. **Upload Issues**
    - Check file format (CSV/Excel only)
    - Verify file size (max 50MB)
    - Ensure file is not corrupted
+
+6. **Streamlit Cloud Deployment Issues**
+   - **Problem**: PyCaret compatibility with Python 3.13
+   - **Solution**: Use local installation instead
+   - **Alternative**: Try Railway or Heroku with Python 3.10
 
 ### Getting Help
 
