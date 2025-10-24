@@ -1,8 +1,13 @@
-# Modela - Lean AutoML MVP
+# Modela - Open Source AutoML Platform
 
 🤖 **Upload your dataset and train an AI model in minutes — no coding required.**
 
-Modela is a minimal, fully functional AutoML web tool for non-technical users that allows them to upload tabular datasets, auto-train models, view results, and download trained models. Built with Streamlit and PyCaret, it's designed to be ultra-lean, low-cost, and deployable on free tiers.
+[![GitHub stars](https://img.shields.io/github/stars/youssof20/modela?style=social)](https://github.com/youssof20/modela)
+[![GitHub forks](https://img.shields.io/github/forks/youssof20/modela?style=social)](https://github.com/youssof20/modela)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+
+Modela is a powerful, open-source AutoML platform that democratizes machine learning by making it accessible to everyone. Built with Streamlit and PyCaret, it provides an intuitive web interface for training machine learning models without writing a single line of code.
 
 ## ✨ Features
 
@@ -10,9 +15,12 @@ Modela is a minimal, fully functional AutoML web tool for non-technical users th
 - **🤖 AutoML Training**: Automatic model training using PyCaret with 5+ algorithms
 - **📈 Rich Visualizations**: Feature importance, confusion matrices, and performance metrics
 - **💾 Model Download**: Download trained models as .pkl files
-- **🔐 User Authentication**: Firebase Auth with guest mode support
-- **☁️ Cloud Storage**: Firebase Storage for datasets and models
+- **🔐 User Management**: Simple local authentication with guest mode support
+- **💾 Local Storage**: Local file storage for datasets and models (completely free)
 - **📱 Responsive Design**: Modern, mobile-friendly interface
+- **🚀 One-Click Deployment**: Deploy to Streamlit Cloud in minutes
+- **📚 Open Source**: Fully open source with MIT license
+- **🎯 Production Ready**: Battle-tested for real-world use cases
 
 ## 🚀 Quick Start
 
@@ -20,8 +28,8 @@ Modela is a minimal, fully functional AutoML web tool for non-technical users th
 
 1. **Clone the repository**
    ```bash
-   git clone <your-repo-url>
-   cd Modela
+   git clone https://github.com/youssof20/modela.git
+   cd modela
    ```
 
 2. **Install dependencies**
@@ -29,19 +37,14 @@ Modela is a minimal, fully functional AutoML web tool for non-technical users th
    pip install -r requirements.txt
    ```
 
-3. **Set up Firebase**
-   - Go to [Firebase Console](https://console.firebase.google.com/)
-   - Create a new project
-   - Enable Authentication (Email/Password)
-   - Enable Storage and create a bucket
-   - Go to Project Settings > Service Accounts
-   - Generate new private key (downloads JSON file)
-   - Copy the values to `.env` file (see `.env.example`)
-
-4. **Create environment file**
+3. **Create demo datasets (optional)**
    ```bash
-   cp .env.example .env
-   # Edit .env with your Firebase credentials
+   python create_demo_data.py
+   ```
+
+4. **Test the installation**
+   ```bash
+   python test_modela.py
    ```
 
 5. **Run the application**
@@ -64,51 +67,76 @@ Modela is a minimal, fully functional AutoML web tool for non-technical users th
 2. **Deploy on Streamlit Cloud**
    - Go to [Streamlit Cloud](https://share.streamlit.io/)
    - Connect your GitHub account
-   - Select your repository
-   - Add Firebase secrets in the dashboard:
-     - `FIREBASE_PROJECT_ID`
-     - `FIREBASE_PRIVATE_KEY_ID`
-     - `FIREBASE_PRIVATE_KEY`
-     - `FIREBASE_CLIENT_EMAIL`
-     - `FIREBASE_CLIENT_ID`
-     - `FIREBASE_AUTH_URI`
-     - `FIREBASE_TOKEN_URI`
-     - `FIREBASE_AUTH_PROVIDER_X509_CERT_URL`
-     - `FIREBASE_CLIENT_X509_CERT_URL`
-     - `FIREBASE_STORAGE_BUCKET`
+   - Select the `youssof20/modela` repository
+   - Click "Deploy" (no additional configuration needed!)
 
-3. **Deploy**
-   - Click "Deploy"
+3. **Your app is ready**
    - Wait for deployment to complete
-   - Your app will be available at `https://your-app-name.streamlit.app`
+   - Your app will be available at `https://modela.streamlit.app`
+
+### Alternative Deployment Options
+
+**Docker (Recommended for Production)**
+```bash
+# Build the Docker image
+docker build -t modela .
+
+# Run the container
+docker run -p 8501:8501 modela
+```
+
+**Heroku**
+```bash
+# Install Heroku CLI and login
+heroku create your-modela-app
+git push heroku main
+```
+
+**Railway**
+```bash
+# Connect your GitHub repo to Railway
+# Railway will automatically detect and deploy
+```
 
 ## 📁 Project Structure
 
 ```
-Modela/
+modela/
 ├── app.py                    # Main Streamlit app entry point
-├── pages/
+├── pages/                    # Streamlit pages
 │   ├── 1_upload.py          # Dataset upload page
 │   ├── 2_train.py           # Model training page
-│   ├── 3_results.py          # Results dashboard
-│   └── 4_projects.py         # Past projects list
-├── utils/
+│   ├── 3_results.py         # Results dashboard
+│   └── 4_projects.py        # Past projects list
+├── utils/                    # Core utilities
 │   ├── automl.py            # PyCaret wrapper functions
-│   ├── firebase_client.py   # Firebase auth + storage
+│   ├── firebase_client.py   # Local storage client
 │   ├── preprocessing.py     # Data cleaning/validation
 │   └── visualization.py     # Charts and metrics display
-├── requirements.txt
-├── .streamlit/config.toml   # Streamlit theme config
-├── README.md
-└── .env.example             # Firebase credentials template
+├── .github/                  # GitHub templates and workflows
+│   ├── ISSUE_TEMPLATE/      # Issue templates
+│   └── workflows/           # CI/CD pipeline
+├── sample_data/              # Demo datasets (created by script)
+├── data/                     # Local storage directory (auto-created)
+├── requirements.txt         # Python dependencies
+├── Dockerfile               # Docker configuration
+├── docker-compose.yml       # Docker Compose setup
+├── setup.py                 # Automated setup script
+├── test_modela.py           # Test suite
+├── create_demo_data.py      # Demo data generator
+├── README.md                # Project documentation
+├── LICENSE                  # MIT License
+├── CONTRIBUTING.md          # Contribution guidelines
+├── CHANGELOG.md             # Version history
+└── .streamlit/config.toml   # Streamlit configuration
 ```
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: Streamlit
 - **AutoML**: PyCaret
-- **Authentication**: Firebase Auth
-- **Storage**: Firebase Storage
+- **Authentication**: Simple local authentication
+- **Storage**: Local file storage
 - **Visualization**: Plotly
 - **Deployment**: Streamlit Cloud (free tier)
 
@@ -119,29 +147,37 @@ Modela/
 
 ## 🔧 Configuration
 
-### Environment Variables
+### Local Storage
 
-Create a `.env` file with your Firebase credentials:
+The application automatically creates a `data/` directory to store:
+- User accounts and authentication data
+- Uploaded datasets
+- Trained models and metadata
 
-```env
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_PRIVATE_KEY_ID=your-private-key-id
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nyour-private-key\n-----END PRIVATE KEY-----\n"
-FIREBASE_CLIENT_EMAIL=your-service-account@your-project.iam.gserviceaccount.com
-FIREBASE_CLIENT_ID=your-client-id
-FIREBASE_AUTH_URI=https://accounts.google.com/o/oauth2/auth
-FIREBASE_TOKEN_URI=https://oauth2.googleapis.com/token
-FIREBASE_AUTH_PROVIDER_X509_CERT_URL=https://www.googleapis.com/oauth2/v1/certs
-FIREBASE_CLIENT_X509_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/your-service-account%40your-project.iam.gserviceaccount.com
-FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+No additional configuration is required!
+
+## 🎯 Demo Datasets
+
+Modela comes with built-in demo datasets to help you get started quickly:
+
+### Classification Datasets
+- **Iris Flowers**: Classic 3-class classification problem
+- **Wine Quality**: Wine classification based on chemical properties
+- **Customer Churn**: Predict customer churn in business scenarios
+- **Synthetic Classification**: Generated dataset for testing
+
+### Regression Datasets
+- **House Prices**: Predict house prices based on features
+- **Synthetic Regression**: Generated dataset for testing
+
+### Getting Demo Data
+```bash
+# Create sample datasets
+python create_demo_data.py
+
+# Test the installation
+python test_modela.py
 ```
-
-### Streamlit Configuration
-
-The `.streamlit/config.toml` file contains:
-- Theme colors
-- File upload size limit (50MB)
-- Font settings
 
 ## 🎯 Usage Guide
 
@@ -149,7 +185,7 @@ The `.streamlit/config.toml` file contains:
 - Click "Upload Dataset" in the sidebar
 - Choose a CSV or Excel file (max 50MB)
 - Preview your data and check the summary
-- Save the dataset to cloud storage
+- Save the dataset to local storage
 
 ### 2. Train Model
 - Select your target column (what you want to predict)
@@ -170,33 +206,66 @@ The `.streamlit/config.toml` file contains:
 
 ## 🔒 Security & Privacy
 
-- **Authentication**: Firebase Auth with email/password
+- **Authentication**: Simple local authentication (email validation)
 - **Guest Mode**: Anonymous users can try the app
-- **Data Storage**: All data stored securely in Firebase Storage
+- **Data Storage**: All data stored locally on your machine
 - **Privacy**: No data is shared with third parties
 
 ## 💰 Cost Structure
 
 - **Free Tier**: 50MB datasets, 1 training at a time
 - **Streamlit Cloud**: Free tier (500MB RAM, public repos)
-- **Firebase**: Free tier (1GB storage, 10GB transfer)
+- **Local Storage**: Completely free (uses your local disk space)
 - **Total Cost**: $0/month for MVP
 
-## 🚀 Future Enhancements
+## 🎯 Use Cases
 
-- **Paid Tiers**: Larger datasets, concurrent training, API access
-- **Model Deployment**: REST API endpoints for trained models
-- **Advanced Features**: Hyperparameter tuning, ensemble methods
-- **Integrations**: Export to various formats, cloud platforms
+### Business Applications
+- **Customer Analytics**: Churn prediction, customer segmentation
+- **Sales Forecasting**: Revenue prediction, demand planning
+- **Risk Assessment**: Credit scoring, fraud detection
+- **Quality Control**: Defect detection, process optimization
+
+### Research & Education
+- **Academic Research**: Quick model prototyping and validation
+- **Data Science Education**: Hands-on learning without coding
+- **Rapid Prototyping**: Test ideas before full implementation
+- **Model Comparison**: Evaluate different algorithms quickly
+
+### Personal Projects
+- **Sports Analytics**: Game outcome prediction
+- **Investment Analysis**: Stock price prediction
+- **Health Monitoring**: Personal health metrics analysis
+- **Home Automation**: Smart home optimization
+
+## 🚀 Roadmap
+
+### Version 1.1 (Q1 2025)
+- [ ] REST API endpoints
+- [ ] Model deployment to cloud platforms
+- [ ] Advanced preprocessing options
+- [ ] Ensemble model support
+
+### Version 1.2 (Q2 2025)
+- [ ] Hyperparameter tuning interface
+- [ ] Time series forecasting
+- [ ] Deep learning model support
+- [ ] Batch prediction API
+
+### Version 2.0 (Q3 2025)
+- [ ] Multi-user collaboration
+- [ ] Model versioning and management
+- [ ] Advanced visualization dashboard
+- [ ] Integration with popular ML platforms
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **Firebase Connection Error**
-   - Check your Firebase credentials in `.env`
-   - Ensure Firebase project is properly configured
-   - Verify storage bucket exists
+1. **Storage Error**
+   - Ensure you have write permissions in the project directory
+   - Check available disk space
+   - Verify the `data/` directory can be created
 
 2. **Model Training Fails**
    - Check dataset size (max 50MB)
@@ -212,7 +281,6 @@ The `.streamlit/config.toml` file contains:
 
 - Check the [Streamlit documentation](https://docs.streamlit.io/)
 - Review [PyCaret documentation](https://pycaret.readthedocs.io/)
-- Firebase [support resources](https://firebase.google.com/support)
 
 ## 📄 License
 
@@ -220,13 +288,54 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions from the community! Whether you're fixing bugs, adding features, or improving documentation, your contributions make Modela better for everyone.
 
-## 📞 Support
+### Quick Start for Contributors
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and test them
+4. Commit your changes: `git commit -m 'Add amazing feature'`
+5. Push to the branch: `git push origin feature/amazing-feature`
+6. Open a Pull Request
 
-For support, email support@modela.ai or create an issue in the GitHub repository.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+## 📊 Project Stats
+
+![GitHub stars](https://img.shields.io/github/stars/youssof20/modela?style=social)
+![GitHub forks](https://img.shields.io/github/forks/youssof20/modela?style=social)
+![GitHub issues](https://img.shields.io/github/issues/youssof20/modela)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/youssof20/modela)
+
+## 🏆 Recognition
+
+Modela has been featured in:
+- [ ] Data Science communities
+- [ ] Open source showcases
+- [ ] Educational resources
+- [ ] Industry publications
+
+## 📞 Support & Community
+
+- **GitHub Issues**: [Report bugs and request features](https://github.com/youssof20/modela/issues)
+- **GitHub Discussions**: [Ask questions and share ideas](https://github.com/youssof20/modela/discussions)
+- **Email**: Contact the maintainer directly
+- **Twitter**: Follow [@youssof20](https://twitter.com/youssof20) for updates
+
+## 🙏 Acknowledgments
+
+- **PyCaret**: For the amazing AutoML framework
+- **Streamlit**: For the beautiful web framework
+- **Contributors**: Thank you to all contributors who make this project better
+- **Community**: Thanks to the open source community for inspiration and support
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-**Built with ❤️ using Streamlit, PyCaret, and Firebase**
+**Built with ❤️ by [Youssof](https://github.com/youssof20) using Streamlit and PyCaret**
+
+⭐ **Star this repository if you find it helpful!**
 "# modela" 
