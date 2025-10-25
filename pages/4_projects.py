@@ -7,9 +7,13 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from utils.firebase_client import get_firebase_client
+from utils.navigation import show_sidebar
 
 def main():
     """Main projects page function."""
+    
+    # Show sidebar navigation
+    show_sidebar()
     
     st.title("📁 My Projects")
     st.markdown("View and manage all your trained models.")

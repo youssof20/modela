@@ -6,6 +6,7 @@ Main Streamlit application entry point.
 import streamlit as st
 import os
 from utils.firebase_client import get_firebase_client
+from utils.navigation import show_sidebar
 
 # Page configuration
 st.set_page_config(
@@ -48,6 +49,9 @@ st.markdown("""
 def main():
     """Main application function."""
     
+    # Show sidebar navigation
+    show_sidebar()
+    
     # Initialize session state
     if 'user_id' not in st.session_state:
         st.session_state.user_id = "local_user"
@@ -63,35 +67,6 @@ def main():
 
 def show_main_content():
     """Show main content."""
-    
-    # Sidebar
-    with st.sidebar:
-        st.markdown("### 🧭 Navigation")
-        
-        # Navigation buttons
-        nav_options = {
-            "📊 Upload Dataset": "pages/1_upload.py",
-            "🤖 Train Model": "pages/2_train.py", 
-            "📈 View Results": "pages/3_results.py",
-            "📁 My Projects": "pages/4_projects.py"
-        }
-        
-        for label, page in nav_options.items():
-            if st.button(label, use_container_width=True):
-                st.switch_page(page)
-        
-        st.markdown("---")
-        st.markdown("### ℹ️ About")
-        st.markdown("""
-        **Modela** is an open-source AutoML platform that makes machine learning accessible to everyone.
-        
-        **Features:**
-        - Upload CSV/Excel files
-        - Automatic model training
-        - Rich visualizations
-        - Download trained models
-        - Completely free & local
-        """)
     
     # Main content - Upload page content
     st.markdown("### 🚀 Get Started")

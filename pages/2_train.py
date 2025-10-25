@@ -10,9 +10,13 @@ from utils.automl import train_model, detect_problem_type
 from utils.preprocessing import validate_target_column, prepare_for_training
 from utils.firebase_client import get_firebase_client
 from utils.visualization import plot_training_progress
+from utils.navigation import show_sidebar
 
 def main():
     """Main training page function."""
+    
+    # Show sidebar navigation
+    show_sidebar()
     
     # Check if dataset is uploaded
     if 'dataset_saved' not in st.session_state or not st.session_state.dataset_saved:

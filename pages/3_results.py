@@ -15,9 +15,13 @@ from utils.visualization import (
 )
 from utils.automl import generate_predictions_sample, serialize_model
 from utils.firebase_client import get_firebase_client
+from utils.navigation import show_sidebar
 
 def main():
     """Main results page function."""
+    
+    # Show sidebar navigation
+    show_sidebar()
     
     # Check if training is completed
     if 'training_completed' not in st.session_state or not st.session_state.training_completed:

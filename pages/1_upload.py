@@ -8,9 +8,13 @@ import pandas as pd
 import io
 from utils.firebase_client import get_firebase_client
 from utils.preprocessing import validate_dataset
+from utils.navigation import show_sidebar
 
 def main():
     """Main upload page function."""
+    
+    # Show sidebar navigation
+    show_sidebar()
     
     st.title("📊 Upload Dataset")
     st.markdown("Upload your CSV or Excel file to get started with AutoML.")
@@ -31,10 +35,16 @@ def main():
                 df = pd.read_excel(uploaded_file)
             
             # Validate dataset
-            validation_result = validate_dataset(df)
+            is_valid, warnings = validate_dataset(df)
             
-            if validation_result['valid']:
+            if is_valid:
                 st.success("✅ Dataset uploaded successfully!")
+                
+                # Show warnings if any
+                if warnings:
+                    st.warning("⚠️ Dataset warnings:")
+                    for warning in warnings:
+                        st.warning(f"• {warning}")
                 
                 # Auto-save dataset
                 firebase_client = get_firebase_client()
@@ -75,8 +85,8 @@ def main():
             
             else:
                 st.error("❌ Dataset validation failed:")
-                for error in validation_result['errors']:
-                    st.error(f"• {error}")
+                for warning in warnings:
+                    st.error(f"• {warning}")
         
         except Exception as e:
             st.error(f"Error reading file: {str(e)}")
