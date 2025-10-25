@@ -19,11 +19,6 @@ from utils.firebase_client import get_firebase_client
 def main():
     """Main results page function."""
     
-    # Check authentication
-    if 'user_id' not in st.session_state or st.session_state.user_id is None:
-        st.error("Please sign in first.")
-        st.stop()
-    
     # Check if training is completed
     if 'training_completed' not in st.session_state or not st.session_state.training_completed:
         st.error("Please complete model training first.")
@@ -56,13 +51,11 @@ def main():
     metrics = training_results['metrics']
     problem_type = training_params['problem_type']
     
-    # Create metrics summary card
-    metrics_summary = create_metrics_summary_card(metrics, problem_type)
-    st.markdown(metrics_summary)
-    
-    # Metrics visualization
-    metrics_fig = plot_metrics_comparison(metrics, problem_type)
-    st.plotly_chart(metrics_fig, use_container_width=True)
+    # Show metrics in a clear way
+    if problem_type == 'classification':
+        show_classification_metrics(metrics)
+    else:
+        show_regression_metrics(metrics)
     
     # Feature importance
     if training_results['feature_importance']:
@@ -86,7 +79,7 @@ def main():
     
     try:
         # Get test data for visualization
-        df = st.session_state.uploaded_dataset
+        df = st.session_state.current_dataset
         target_col = training_params['target_col']
         test_split = training_params['test_split']
         
@@ -97,6 +90,8 @@ def main():
         # Generate predictions
         predictions_df = generate_predictions_sample(
             training_results['model'], 
+            training_results['scaler'],
+            training_results['label_encoders'],
             test_data, 
             target_col
         )
@@ -145,15 +140,17 @@ def main():
         st.markdown("**🎯 What this model does:**")
         if problem_type == 'classification':
             st.markdown(f"""
-            - Predicts categories for the **{training_params['target_col']}** column
-            - Uses {len(df.columns)-1} features to make predictions
-            - Achieves {metrics.get('accuracy', 0):.1%} accuracy on test data
+            - **Predicts categories** for the **{training_params['target_col']}** column
+            - Uses **{len(df.columns)-1} features** to make predictions
+            - Achieves **{metrics.get('accuracy', 0):.1%} accuracy** on test data
+            - **Precision:** {metrics.get('precision', 0):.1%} | **Recall:** {metrics.get('recall', 0):.1%}
             """)
         else:
             st.markdown(f"""
-            - Predicts numerical values for the **{training_params['target_col']}** column
-            - Uses {len(df.columns)-1} features to make predictions
-            - Achieves {metrics.get('r2', 0):.1%} R² score on test data
+            - **Predicts numerical values** for the **{training_params['target_col']}** column
+            - Uses **{len(df.columns)-1} features** to make predictions
+            - Achieves **{metrics.get('r2', 0):.1%} R² score** on test data
+            - **RMSE:** {metrics.get('rmse', 0):.2f} | **MAE:** {metrics.get('mae', 0):.2f}
             """)
     
     with insights_col2:
@@ -206,21 +203,99 @@ def main():
         
         st.markdown("**Performance Metrics:**")
         st.json(metrics)
+
+def show_classification_metrics(metrics):
+    """Show classification metrics in a clear way."""
     
-    # Upgrade prompt (placeholder)
-    if st.session_state.is_guest:
-        st.markdown("---")
-        st.info("""
-        🚀 **Upgrade to Pro** for unlimited models, larger datasets, and API access!
-        
-        - Train models on datasets up to 500MB
-        - Save unlimited projects
-        - Deploy models as REST APIs
-        - Priority support
-        """)
-        
-        if st.button("💎 Upgrade to Pro", use_container_width=True):
-            st.info("Upgrade functionality will be available soon!")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric(
+            "Accuracy", 
+            f"{metrics.get('accuracy', 0):.1%}",
+            help="Percentage of correct predictions"
+        )
+    
+    with col2:
+        st.metric(
+            "Precision", 
+            f"{metrics.get('precision', 0):.1%}",
+            help="Percentage of positive predictions that were correct"
+        )
+    
+    with col3:
+        st.metric(
+            "Recall", 
+            f"{metrics.get('recall', 0):.1%}",
+            help="Percentage of actual positives that were correctly identified"
+        )
+    
+    with col4:
+        st.metric(
+            "F1 Score", 
+            f"{metrics.get('f1', 0):.1%}",
+            help="Harmonic mean of precision and recall"
+        )
+    
+    # Interpretation
+    accuracy = metrics.get('accuracy', 0)
+    if accuracy >= 0.9:
+        st.success("🎉 Excellent! Your model has very high accuracy.")
+    elif accuracy >= 0.8:
+        st.success("✅ Great! Your model has good accuracy.")
+    elif accuracy >= 0.7:
+        st.info("👍 Good! Your model has decent accuracy.")
+    else:
+        st.warning("⚠️ Consider improving your data or trying different models.")
+
+def show_regression_metrics(metrics):
+    """Show regression metrics in a clear way."""
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric(
+            "R² Score", 
+            f"{metrics.get('r2', 0):.1%}",
+            help="Percentage of variance explained by the model"
+        )
+    
+    with col2:
+        st.metric(
+            "RMSE", 
+            f"{metrics.get('rmse', 0):.2f}",
+            help="Root Mean Square Error - lower is better"
+        )
+    
+    with col3:
+        st.metric(
+            "MAE", 
+            f"{metrics.get('mae', 0):.2f}",
+            help="Mean Absolute Error - lower is better"
+        )
+    
+    with col4:
+        # Calculate MAPE if possible
+        mape = metrics.get('mape', 0)
+        if mape > 0:
+            st.metric(
+                "MAPE", 
+                f"{mape:.1%}",
+                help="Mean Absolute Percentage Error - lower is better"
+            )
+        else:
+            st.metric("MAPE", "N/A", help="Not calculated")
+    
+    # Interpretation
+    r2 = metrics.get('r2', 0)
+    if r2 >= 0.8:
+        st.success("🎉 Excellent! Your model explains most of the variance.")
+    elif r2 >= 0.6:
+        st.success("✅ Great! Your model has good predictive power.")
+    elif r2 >= 0.4:
+        st.info("👍 Good! Your model has decent predictive power.")
+    else:
+        st.warning("⚠️ Consider improving your data or trying different models.")
 
 if __name__ == "__main__":
     main()

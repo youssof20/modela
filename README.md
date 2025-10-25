@@ -34,32 +34,22 @@ Modela is a powerful, open-source AutoML platform that democratizes machine lear
    cd modela
    ```
 
-2. **Check compatibility (recommended)**
-   ```bash
-   python check_installation.py
-   ```
-
-3. **Install dependencies**
+2. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Create demo datasets (optional)**
+3. **Run the application**
    ```bash
-   python create_demo_data.py
+   python run_modela.py
+   ```
+   
+   Or manually:
+   ```bash
+   python -m streamlit run app.py
    ```
 
-5. **Test the installation**
-   ```bash
-   python test_modela.py
-   ```
-
-6. **Run the application**
-   ```bash
-   streamlit run app.py
-   ```
-
-7. **Open your browser**
+4. **Open your browser**
    Navigate to `http://localhost:8501`
 
 ### Why Run Locally?

@@ -11,18 +11,14 @@ from utils.firebase_client import get_firebase_client
 def main():
     """Main projects page function."""
     
-    # Check authentication
-    if 'user_id' not in st.session_state or st.session_state.user_id is None:
-        st.error("Please sign in first.")
-        st.stop()
-    
     st.title("📁 My Projects")
     st.markdown("View and manage all your trained models.")
     
     # Load projects
     try:
         firebase_client = get_firebase_client()
-        projects = firebase_client.list_user_projects(st.session_state.user_id)
+        user_id = st.session_state.get('user_id', 'local_user')
+        projects = firebase_client.list_user_projects(user_id)
         
         if not projects:
             # No projects found
@@ -145,7 +141,7 @@ def main():
                             if st.button("📥 Download", key=f"download_{i}", use_container_width=True):
                                 # Download model
                                 model_data = firebase_client.download_model(
-                                    st.session_state.user_id, 
+                                    user_id, 
                                     project['name']
                                 )
                                 if model_data:

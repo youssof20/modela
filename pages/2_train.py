@@ -14,13 +14,8 @@ from utils.visualization import plot_training_progress
 def main():
     """Main training page function."""
     
-    # Check authentication
-    if 'user_id' not in st.session_state or st.session_state.user_id is None:
-        st.error("Please sign in first.")
-        st.stop()
-    
     # Check if dataset is uploaded
-    if 'uploaded_dataset' not in st.session_state:
+    if 'dataset_saved' not in st.session_state or not st.session_state.dataset_saved:
         st.error("Please upload a dataset first.")
         if st.button("📊 Upload Dataset"):
             st.switch_page("pages/1_upload.py")
@@ -29,7 +24,7 @@ def main():
     st.title("🤖 Train Your Model")
     st.markdown("Configure your training parameters and let our AI find the best model for your data.")
     
-    df = st.session_state.uploaded_dataset
+    df = st.session_state.current_dataset
     
     # Dataset info
     st.markdown("### 📊 Dataset Information")

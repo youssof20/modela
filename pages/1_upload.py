@@ -1,26 +1,21 @@
 """
 Upload Dataset Page
-Allows users to upload CSV or Excel files and preview the data.
+Handles dataset upload, validation, and preview.
 """
 
 import streamlit as st
 import pandas as pd
 import io
 from utils.firebase_client import get_firebase_client
-from utils.preprocessing import validate_dataset, get_dataset_summary, suggest_target_column
+from utils.preprocessing import validate_dataset
 
 def main():
     """Main upload page function."""
     
-    # Check authentication
-    if 'user_id' not in st.session_state or st.session_state.user_id is None:
-        st.error("Please sign in first.")
-        st.stop()
-    
     st.title("📊 Upload Dataset")
-    st.markdown("Upload your CSV or Excel file to get started with AutoML training.")
+    st.markdown("Upload your CSV or Excel file to get started with AutoML.")
     
-    # File uploader
+    # File upload
     uploaded_file = st.file_uploader(
         "Choose a file",
         type=['csv', 'xlsx', 'xls'],
@@ -28,12 +23,6 @@ def main():
     )
     
     if uploaded_file is not None:
-        # Check file size
-        file_size = len(uploaded_file.getvalue()) / (1024 * 1024)  # MB
-        if file_size > 50:
-            st.error("File size exceeds 50MB limit. Please upload a smaller file.")
-            st.stop()
-        
         try:
             # Read the file
             if uploaded_file.name.endswith('.csv'):
@@ -42,199 +31,225 @@ def main():
                 df = pd.read_excel(uploaded_file)
             
             # Validate dataset
-            is_valid, warnings = validate_dataset(df)
+            validation_result = validate_dataset(df)
             
-            if not is_valid:
+            if validation_result['valid']:
+                st.success("✅ Dataset uploaded successfully!")
+                
+                # Auto-save dataset
+                firebase_client = get_firebase_client()
+                user_id = st.session_state.get('user_id', 'local_user')
+                
+                # Save dataset
+                dataset_name = uploaded_file.name.split('.')[0]
+                file_data = uploaded_file.getvalue()
+                
+                file_path = firebase_client.upload_dataset(user_id, dataset_name, file_data)
+                
+                if file_path:
+                    st.session_state.dataset_saved = True
+                    st.session_state.current_dataset = df
+                    st.session_state.dataset_name = dataset_name
+                    st.session_state.dataset_path = file_path
+                    
+                    st.success(f"💾 Dataset '{dataset_name}' saved successfully!")
+                    
+                    # Show dataset info
+                    show_dataset_info(df, dataset_name)
+                    
+                    # Auto-proceed to training
+                    st.markdown("---")
+                    st.markdown("### 🚀 Ready to Train!")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("🤖 Start Training", type="primary", use_container_width=True):
+                            st.switch_page("pages/2_train.py")
+                    
+                    with col2:
+                        if st.button("📊 View Dataset Details", use_container_width=True):
+                            st.switch_page("pages/2_train.py")
+                
+                else:
+                    st.error("Failed to save dataset. Please try again.")
+            
+            else:
                 st.error("❌ Dataset validation failed:")
-                for warning in warnings:
-                    st.error(f"- {warning}")
-                st.stop()
-            
-            # Show warnings if any
-            if warnings:
-                st.warning("⚠️ Dataset warnings:")
-                for warning in warnings:
-                    st.warning(f"- {warning}")
-            
-            # Store dataset in session state
-            st.session_state.uploaded_dataset = df
-            st.session_state.dataset_name = uploaded_file.name
-            
-            # Show success message
-            st.success(f"✅ Successfully uploaded {uploaded_file.name} ({file_size:.1f}MB)")
-            
-            # Dataset overview
-            st.markdown("### 📋 Dataset Overview")
-            
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Rows", f"{len(df):,}")
-            with col2:
-                st.metric("Columns", len(df.columns))
-            with col3:
-                st.metric("Size", f"{file_size:.1f}MB")
-            with col4:
-                missing_pct = df.isnull().sum().sum() / (len(df) * len(df.columns)) * 100
-                st.metric("Missing Data", f"{missing_pct:.1f}%")
-            
-            # Data preview
-            st.markdown("### 👀 Data Preview")
-            st.dataframe(df.head(10), use_container_width=True)
-            
-            # Dataset summary
-            with st.expander("📊 Detailed Dataset Summary"):
-                summary = get_dataset_summary(df)
-                
-                st.markdown("**Data Types:**")
-                dtype_df = pd.DataFrame(list(summary['dtypes'].items()), columns=['Column', 'Data Type'])
-                st.dataframe(dtype_df, use_container_width=True)
-                
-                if summary['missing_values']:
-                    st.markdown("**Missing Values:**")
-                    missing_df = pd.DataFrame(list(summary['missing_values'].items()), columns=['Column', 'Missing Count'])
-                    missing_df = missing_df[missing_df['Missing Count'] > 0]
-                    if not missing_df.empty:
-                        st.dataframe(missing_df, use_container_width=True)
-                    else:
-                        st.info("No missing values found!")
-                
-                if summary['numeric_columns']:
-                    st.markdown("**Numeric Columns Statistics:**")
-                    st.dataframe(pd.DataFrame(summary['numeric_stats']), use_container_width=True)
-                
-                if summary['categorical_columns']:
-                    st.markdown("**Categorical Columns:**")
-                    for col in summary['categorical_columns']:
-                        st.write(f"**{col}:** {df[col].nunique()} unique values")
-                        if col in summary['categorical_stats']:
-                            st.write(f"Top values: {list(summary['categorical_stats'][col].keys())[:5]}")
-            
-            # Target column suggestion
-            st.markdown("### 🎯 Target Column Suggestion")
-            suggested_target = suggest_target_column(df)
-            st.info(f"💡 We suggest using **'{suggested_target}'** as your target column.")
-            st.write("This column will be used to train your model. You can change this in the next step.")
-            
-            # Store suggested target
-            st.session_state.suggested_target = suggested_target
-            
-            # Upload to Firebase Storage
-            if st.button("💾 Save Dataset", type="primary"):
-                with st.spinner("Saving dataset to cloud storage..."):
-                    firebase_client = get_firebase_client()
-                    
-                    # Convert dataframe to CSV bytes
-                    csv_buffer = io.StringIO()
-                    df.to_csv(csv_buffer, index=False)
-                    csv_bytes = csv_buffer.getvalue().encode('utf-8')
-                    
-                    # Upload to Firebase
-                    download_url = firebase_client.upload_dataset(
-                        st.session_state.user_id,
-                        uploaded_file.name,
-                        csv_bytes
-                    )
-                    
-                    if download_url:
-                        st.success("✅ Dataset saved to cloud storage!")
-                        st.session_state.dataset_saved = True
-                        st.session_state.dataset_url = download_url
-                    else:
-                        st.error("❌ Failed to save dataset. Please try again.")
-            
-            # Navigation
-            st.markdown("---")
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                if st.button("⬅️ Back to Home", use_container_width=True):
-                    st.switch_page("app.py")
-            
-            with col2:
-                if st.button("➡️ Configure Training", type="primary", use_container_width=True):
-                    if 'dataset_saved' in st.session_state and st.session_state.dataset_saved:
-                        st.switch_page("pages/2_train.py")
-                    else:
-                        st.warning("Please save the dataset first before proceeding.")
+                for error in validation_result['errors']:
+                    st.error(f"• {error}")
         
         except Exception as e:
-            st.error(f"❌ Error reading file: {str(e)}")
-            st.info("Please make sure your file is a valid CSV or Excel file.")
+            st.error(f"Error reading file: {str(e)}")
     
     else:
-        # Show instructions when no file is uploaded
-        st.markdown("### 📝 Instructions")
+        # Show sample datasets
+        show_sample_datasets()
+
+def show_dataset_info(df, dataset_name):
+    """Show dataset information and preview."""
+    
+    st.markdown("---")
+    st.markdown("### 📋 Dataset Information")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Rows", f"{len(df):,}")
+    
+    with col2:
+        st.metric("Columns", len(df.columns))
+    
+    with col3:
+        st.metric("Missing Values", f"{df.isnull().sum().sum():,}")
+    
+    with col4:
+        st.metric("File Size", f"{len(df) * len(df.columns) / 1000:.1f}K cells")
+    
+    # Data preview
+    st.markdown("### 👀 Data Preview")
+    st.dataframe(df.head(10), use_container_width=True)
+    
+    # Column information
+    st.markdown("### 📊 Column Information")
+    
+    col_info = []
+    for col in df.columns:
+        col_info.append({
+            'Column': col,
+            'Type': str(df[col].dtype),
+            'Missing': df[col].isnull().sum(),
+            'Unique': df[col].nunique(),
+            'Sample': str(df[col].iloc[0]) if len(df) > 0 else 'N/A'
+        })
+    
+    col_info_df = pd.DataFrame(col_info)
+    st.dataframe(col_info_df, use_container_width=True)
+    
+    # Suggest target column
+    suggest_target_column(df)
+
+def suggest_target_column(df):
+    """Suggest the best target column based on data analysis."""
+    
+    st.markdown("### 🎯 Target Column Suggestion")
+    
+    # Analyze columns for target suggestions
+    suggestions = []
+    
+    for col in df.columns:
+        col_data = df[col]
         
-        col1, col2 = st.columns(2)
+        # Skip if too many missing values
+        if col_data.isnull().sum() > len(df) * 0.5:
+            continue
         
-        with col1:
-            st.markdown("""
-            **📋 Supported Formats:**
-            - CSV files (.csv)
-            - Excel files (.xlsx, .xls)
+        # Check if it's a good target for classification
+        if col_data.dtype == 'object' or col_data.nunique() <= 20:
+            suggestions.append({
+                'column': col,
+                'type': 'Classification',
+                'reason': f'{col_data.nunique()} unique values',
+                'score': 1.0 if col_data.nunique() <= 10 else 0.7
+            })
+        
+        # Check if it's a good target for regression
+        elif col_data.dtype in ['int64', 'float64']:
+            suggestions.append({
+                'column': col,
+                'type': 'Regression',
+                'reason': f'Numeric with {col_data.nunique()} unique values',
+                'score': 0.8 if col_data.nunique() > 20 else 0.5
+            })
+    
+    if suggestions:
+        # Sort by score
+        suggestions.sort(key=lambda x: x['score'], reverse=True)
+        
+        best_suggestion = suggestions[0]
+        
+        st.success(f"💡 **We suggest using '{best_suggestion['column']}' as your target column.**")
+        st.info(f"**Type:** {best_suggestion['type']} | **Reason:** {best_suggestion['reason']}")
+        
+        # Store suggestion in session state
+        st.session_state.suggested_target = best_suggestion['column']
+        st.session_state.suggested_type = best_suggestion['type']
+    
+    else:
+        st.warning("⚠️ Could not suggest a target column. Please review your data manually.")
+
+def show_sample_datasets():
+    """Show sample datasets for testing."""
+    
+    st.markdown("---")
+    st.markdown("### 🧪 Try Sample Datasets")
+    st.markdown("Don't have a dataset? Try one of our sample datasets:")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        **📊 Iris Dataset**
+        - 150 rows, 5 columns
+        - Classification problem
+        - Predict flower species
+        """)
+        if st.button("Use Iris Dataset", use_container_width=True):
+            load_sample_dataset("iris")
+    
+    with col2:
+        st.markdown("""
+        **📈 Synthetic Classification**
+        - 1000 rows, 11 columns
+        - Classification problem
+        - Predict categories
+        """)
+        if st.button("Use Classification Dataset", use_container_width=True):
+            load_sample_dataset("synthetic_classification")
+    
+    with col3:
+        st.markdown("""
+        **📊 Synthetic Regression**
+        - 1000 rows, 11 columns
+        - Regression problem
+        - Predict continuous values
+        """)
+        if st.button("Use Regression Dataset", use_container_width=True):
+            load_sample_dataset("synthetic_regression")
+
+def load_sample_dataset(dataset_name):
+    """Load a sample dataset."""
+    
+    try:
+        import os
+        sample_path = f"sample_data/{dataset_name}.csv"
+        
+        if os.path.exists(sample_path):
+            df = pd.read_csv(sample_path)
             
-            **📏 File Requirements:**
-            - Maximum size: 50MB
-            - Minimum rows: 10
-            - Minimum columns: 2
-            """)
-        
-        with col2:
-            st.markdown("""
-            **💡 Tips for Best Results:**
-            - Clean your data before uploading
-            - Remove unnecessary columns
-            - Ensure your target column is clear
-            - Check for missing values
-            """)
-        
-        # Sample datasets
-        st.markdown("### 🎯 Sample Datasets")
-        st.markdown("Don't have a dataset? Try these examples:")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            if st.button("📊 Iris Dataset", use_container_width=True):
-                # Load iris dataset
-                from sklearn.datasets import load_iris
-                iris = load_iris()
-                df = pd.DataFrame(iris.data, columns=iris.feature_names)
-                df['target'] = iris.target
-                st.session_state.uploaded_dataset = df
-                st.session_state.dataset_name = "iris_sample.csv"
-                st.session_state.suggested_target = "target"
-                st.success("✅ Loaded Iris dataset!")
+            # Auto-save dataset
+            firebase_client = get_firebase_client()
+            user_id = st.session_state.get('user_id', 'local_user')
+            
+            with open(sample_path, 'rb') as f:
+                file_data = f.read()
+            
+            file_path = firebase_client.upload_dataset(user_id, dataset_name, file_data)
+            
+            if file_path:
+                st.session_state.dataset_saved = True
+                st.session_state.current_dataset = df
+                st.session_state.dataset_name = dataset_name
+                st.session_state.dataset_path = file_path
+                
+                st.success(f"✅ Loaded {dataset_name} dataset!")
                 st.rerun()
-        
-        with col2:
-            if st.button("🚢 Titanic Dataset", use_container_width=True):
-                # Load titanic dataset
-                try:
-                    df = pd.read_csv("https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv")
-                    st.session_state.uploaded_dataset = df
-                    st.session_state.dataset_name = "titanic_sample.csv"
-                    st.session_state.suggested_target = "Survived"
-                    st.success("✅ Loaded Titanic dataset!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Could not load Titanic dataset: {str(e)}")
-        
-        with col3:
-            if st.button("🏠 Boston Housing", use_container_width=True):
-                # Load boston housing dataset
-                try:
-                    from sklearn.datasets import load_boston
-                    boston = load_boston()
-                    df = pd.DataFrame(boston.data, columns=boston.feature_names)
-                    df['target'] = boston.target
-                    st.session_state.uploaded_dataset = df
-                    st.session_state.dataset_name = "boston_housing_sample.csv"
-                    st.session_state.suggested_target = "target"
-                    st.success("✅ Loaded Boston Housing dataset!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Could not load Boston Housing dataset: {str(e)}")
+            else:
+                st.error("Failed to load sample dataset.")
+        else:
+            st.error("Sample dataset not found. Please run 'python create_demo_simple.py' first.")
+    
+    except Exception as e:
+        st.error(f"Error loading sample dataset: {str(e)}")
 
 if __name__ == "__main__":
     main()
