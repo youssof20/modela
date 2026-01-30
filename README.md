@@ -1,108 +1,52 @@
-# Modela - Open Source AutoML Platform
+# Modela - AutoML Web App
 
-[![GitHub stars](https://img.shields.io/github/stars/youssof20/modela?style=social)](https://github.com/youssof20/modela)
-[![GitHub forks](https://img.shields.io/github/forks/youssof20/modela?style=social)](https://github.com/youssof20/modela)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+A simple web interface for training machine learning models without code. Built with Streamlit and PyCaret.
 
-Modela is a powerful, open-source AutoML platform that democratizes machine learning by making it accessible to everyone. Built with Streamlit and PyCaret, it provides an intuitive web interface for training machine learning models without writing a single line of code.
+## What it does
 
-## Features
+Upload a CSV, pick what you want to predict, and it trains a bunch of ML models for you. Shows you which one works best and lets you download it.
 
-- **📊 Easy Data Upload**: Support for CSV and Excel files up to 50MB
-- **🤖 AutoML Training**: Automatic model training using PyCaret with 5+ algorithms
-- **📈 Rich Visualizations**: Feature importance, confusion matrices, and performance metrics
-- **💾 Model Download**: Download trained models as .pkl files
+## Setup
 
-## 🚀 Quick Start
-
-**Modela is designed to run locally on your machine.** This gives you full control over your data and models while keeping everything private and secure.
-
-### Local Installation (Recommended)
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/youssof20/modela.git
-   cd modela
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Run the application**
-   ```bash
-   python run_modela.py
-   ```
-   
-   Or manually:
-   ```bash
-   python -m streamlit run app.py
-   ```
-
-4. **Open your browser**
-   Navigate to `http://localhost:8501`
-
-### System Requirements
-
-- **Python**: 3.8, 3.9, or 3.10 (3.11+ may have compatibility issues)
-- **RAM**: Minimum 4GB, recommended 8GB+
-- **Storage**: 2GB free space
-- **OS**: Windows, macOS, or Linux
-
-### Alternative Deployment Options
-
-**Docker (For Production/Sharing)**
 ```bash
-# Build and run with Docker
-docker-compose up
-# Access at http://localhost:8501
+git clone https://github.com/youssof20/modela.git
+cd modela
+pip install -r requirements.txt
+python run_modela.py
 ```
 
-**Cloud Deployment (Not Recommended)**
-- **Note**: PyCaret has compatibility issues with newer Python versions
-- **Alternative**: Use Docker for consistent deployment
-- **Local First**: Designed to run on your machine for privacy and performance
+Go to `http://localhost:8501`
 
-## 📊 Supported Data Types
+## Requirements
 
-- **Classification**: Predicting categories (e.g., spam/not spam, customer churn)
-- **Regression**: Predicting numerical values (e.g., house prices, sales forecasts)
+- Python 3.8-3.10 (PyCaret doesn't work great with 3.11+)
+- 4GB RAM minimum
+- CSV or Excel file with your data
 
-## 🔧 Configuration
+## How to use
 
-### Local Storage
+1. Upload your dataset (CSV or Excel)
+2. Pick which column you want to predict
+3. Choose classification or regression
+4. Click "Start Training" and wait a few minutes
+5. Download your trained model
 
-The application automatically creates a `data/` directory to store:
-- User accounts and authentication data
-- Uploaded datasets
-- Trained models and metadata
+## What you get
 
-No additional configuration is required!
+- Comparison of different ML algorithms
+- Performance metrics and charts
+- Feature importance visualization
+- Trained model as a .pkl file
 
-## Usage Guide
+## Limitations
 
-### 1. Upload Dataset
-- Click "Upload Dataset" in the sidebar
-- Choose a CSV or Excel file (max 50MB)
-- Preview your data and check the summary
-- Save the dataset to local storage
+- Max 50MB file size
+- Takes a while to train (1-3 minutes usually)
+- Some Python version compatibility issues
+- Works best locally, cloud deployment is tricky
 
-### 2. Train Model
-- Select your target column (what you want to predict)
-- Choose problem type (classification or regression)
-- Configure advanced settings (optional)
-- Click "Start Training" and wait 1-3 minutes
+## Tech
 
-### 3. View Results
-- See model performance metrics
-- View feature importance charts
-- Download your trained model
-- Get insights and explanations
-
-### 4. Manage Projects
-- View all your trained models
-- Download previous models
-- Track your progress over time
----
+- Streamlit for the web interface
+- PyCaret for the AutoML part
+- Saves everything locally in a `data/` folder
